@@ -1,0 +1,2770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Destroying Island — EdTechra Classroom Survival</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=JetBrains+Mono:wght@700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-deep: #06131f;
+      --bg-panel: rgba(9, 24, 38, 0.88);
+      --bg-card: rgba(14, 36, 56, 0.78);
+      --border-glass: rgba(125, 211, 252, 0.22);
+      --border-gold: rgba(251, 191, 36, 0.45);
+      --gold: #fbbf24;
+      --gold-bright: #fde68a;
+      --amber: #f59e0b;
+      --coral: #ff4d4d;
+      --crimson: #dc2626;
+      --aqua: #22d3ee;
+      --emerald: #34d399;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-display: 'Cinzel', Georgia, serif;
+      --font-ui: 'Outfit', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-deep);
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      user-select: none;
+    }
+
+    /* ==================== BACKGROUND CANVAS ==================== */
+    #game-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 1;
+    }
+
+    /* ==================== SCREEN CONTAINERS ==================== */
+    .screen-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    .screen-layer.hidden {
+      opacity: 0;
+      pointer-events: none !important;
+      visibility: hidden;
+    }
+
+    /* ==================== SETUP / CONFIG PANEL ==================== */
+    #setup-screen {
+      z-index: 30;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: radial-gradient(circle at 50% 25%, rgba(6, 25, 42, 0.55), rgba(4, 12, 22, 0.86));
+      backdrop-filter: blur(8px);
+      overflow-y: auto;
+    }
+
+    .setup-shell {
+      width: 100%;
+      max-width: 1080px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-glass);
+      border-radius: 24px;
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      padding: 20px 28px;
+      display: grid;
+      grid-template-columns: 1.45fr 1fr;
+      gap: 18px;
+      max-height: 95vh;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 900px) {
+      .setup-shell {
+        grid-template-columns: 1fr;
+        padding: 20px;
+      }
+    }
+
+    .brand-header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+      padding-bottom: 16px;
+    }
+
+    .brand-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-emblem {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #f59e0b, #dc2626);
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      box-shadow: 0 8px 24px rgba(245, 158, 11, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+    }
+
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.35rem, 2.5vw, 2rem);
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      margin: 0;
+      background: linear-gradient(180deg, #fffbeb 0%, #fbbf24 55%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 18px rgba(251, 191, 36, 0.18);
+    }
+
+    .brand-sub {
+      margin: 2px 0 0;
+      font-size: 0.88rem;
+      color: var(--aqua);
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .edtechra-pill {
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: rgba(34, 211, 238, 0.12);
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      color: #a5f3fc;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .config-section {
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .control-group {
+      background: var(--bg-card);
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      border-radius: 14px;
+      padding: 11px 14px;
+    }
+
+    .control-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .control-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #cbd5e1;
+    }
+
+    .control-value-badge {
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: var(--gold);
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      padding: 2px 10px;
+      border-radius: 999px;
+    }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type="range"] {
+      flex: 1;
+      accent-color: var(--gold);
+      height: 6px;
+      cursor: pointer;
+    }
+
+    input[type="number"], input[type="text"] {
+      background: rgba(6, 19, 31, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      border-radius: 10px;
+      color: var(--text-main);
+      font-family: var(--font-ui);
+      font-weight: 700;
+      padding: 8px 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="number"]:focus, input[type="text"]:focus {
+      border-color: var(--aqua);
+    }
+
+    .chip-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip-btn {
+      flex: 1 1 auto;
+      min-width: 58px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(6, 19, 31, 0.65);
+      color: #cbd5e1;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+
+    .chip-btn:hover {
+      border-color: rgba(34, 211, 238, 0.55);
+      color: #fff;
+    }
+
+    .chip-btn.active {
+      background: linear-gradient(135deg, rgba(251, 191, 36, 0.26), rgba(245, 158, 11, 0.16));
+      border-color: var(--gold);
+      color: var(--gold-bright);
+      box-shadow: 0 0 16px rgba(251, 191, 36, 0.2);
+    }
+
+    .toggle-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    @media (max-width: 540px) {
+      .toggle-grid { grid-template-columns: 1fr; }
+    }
+
+    .toggle-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: rgba(6, 19, 31, 0.65);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .toggle-card:hover { border-color: rgba(34, 211, 238, 0.45); }
+
+    .toggle-label {
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
+    .switch-pill {
+      width: 44px;
+      height: 24px;
+      border-radius: 999px;
+      background: #334155;
+      position: relative;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+
+    .switch-pill::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.2s;
+    }
+
+    .toggle-card.on .switch-pill {
+      background: #10b981;
+    }
+
+    .toggle-card.on .switch-pill::after {
+      transform: translateX(20px);
+    }
+
+    /* Summary Card */
+    .summary-panel {
+      background: linear-gradient(160deg, rgba(15, 39, 61, 0.9), rgba(7, 20, 34, 0.95));
+      border: 1px solid var(--border-gold);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .summary-title {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--gold);
+      letter-spacing: 0.06em;
+      margin: 0 0 12px;
+      text-transform: uppercase;
+    }
+
+    .summary-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.9rem;
+      padding-bottom: 7px;
+      border-bottom: 1px dashed rgba(148, 163, 184, 0.16);
+    }
+
+    .summary-row span:first-child { color: var(--text-muted); }
+    .summary-row span:last-child { font-weight: 800; color: #f8fafc; }
+
+    .btn-primary-hero {
+      width: 100%;
+      padding: 16px 22px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 48%, #ea580c 100%);
+      color: #1a0b00;
+      font-family: var(--font-display);
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      box-shadow: 0 12px 32px rgba(245, 158, 11, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+    }
+
+    .btn-primary-hero:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 38px rgba(245, 158, 11, 0.5);
+    }
+
+    .btn-primary-hero:active {
+      transform: translateY(1px);
+    }
+
+    .btn-secondary {
+      padding: 10px 14px;
+      border-radius: 11px;
+      border: 1px solid rgba(125, 211, 252, 0.3);
+      background: rgba(14, 36, 56, 0.78);
+      color: #e0f2fe;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.86rem;
+      cursor: pointer;
+      transition: all 0.18s;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--aqua);
+      background: rgba(34, 211, 238, 0.16);
+    }
+
+    /* ==================== PROJECTOR HUD ==================== */
+    #projector-hud {
+      z-index: 12;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 28px;
+    }
+
+    .hud-top-bar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .hud-badge {
+      background: rgba(5, 16, 28, 0.72);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(125, 211, 252, 0.25);
+      border-radius: 16px;
+      padding: 10px 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.38);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .hud-stat-label {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--aqua);
+    }
+
+    .hud-stat-val {
+      font-family: var(--font-mono);
+      font-size: clamp(1.35rem, 2.5vw, 2rem);
+      font-weight: 800;
+      color: #fff;
+      line-height: 1.05;
+    }
+
+    /* Giant Countdown Timer */
+    .timer-center-dock {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 15;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .timer-center-dock.hidden {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.85);
+    }
+
+    .timer-ring-wrap {
+      position: relative;
+      width: clamp(128px, 14vw, 172px);
+      height: clamp(128px, 14vw, 172px);
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(6, 20, 35, 0.88) 58%, rgba(6, 20, 35, 0.55) 100%);
+      box-shadow: 0 14px 44px rgba(0, 0, 0, 0.55), 0 0 36px rgba(34, 211, 238, 0.18);
+    }
+
+    .timer-ring-wrap.urgent {
+      box-shadow: 0 14px 50px rgba(220, 38, 38, 0.6), 0 0 48px rgba(239, 68, 68, 0.45);
+      animation: timerPulse 0.6s ease-in-out infinite alternate;
+    }
+
+    @keyframes timerPulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.06); }
+    }
+
+    .timer-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .timer-number {
+      font-family: var(--font-mono);
+      font-size: clamp(2.8rem, 5vw, 4.1rem);
+      font-weight: 800;
+      color: #ffffff;
+      text-shadow: 0 4px 18px rgba(0, 0, 0, 0.7);
+      z-index: 2;
+    }
+
+    .timer-ring-wrap.urgent .timer-number {
+      color: #fecaca;
+    }
+
+    .timer-sub-pill {
+      margin-top: 8px;
+      padding: 4px 14px;
+      border-radius: 999px;
+      background: rgba(5, 16, 28, 0.78);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      color: var(--gold-bright);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* Bottom-right quick projector toolbar */
+    .projector-quick-tools {
+      position: fixed;
+      bottom: 18px;
+      right: 22px;
+      z-index: 22;
+      display: flex;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    .pill-tool-btn {
+      padding: 9px 15px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      background: rgba(6, 19, 31, 0.74);
+      backdrop-filter: blur(8px);
+      color: #e2e8f0;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .pill-tool-btn:hover {
+      border-color: var(--aqua);
+      color: #fff;
+      background: rgba(14, 36, 56, 0.92);
+    }
+
+    /* ==================== DRAMATIC CENTER OVERLAYS ==================== */
+    #cinematic-overlay {
+      z-index: 18;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      pointer-events: none;
+    }
+
+    .banner-card {
+      text-align: center;
+      padding: 34px 48px;
+      border-radius: 26px;
+      background: radial-gradient(circle at 50% 0%, rgba(18, 44, 68, 0.92), rgba(5, 15, 26, 0.94));
+      border: 2px solid var(--border-gold);
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.72), 0 0 60px rgba(251, 191, 36, 0.16);
+      max-width: 760px;
+      width: 100%;
+      pointer-events: auto;
+      animation: bannerIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .banner-card.danger {
+      border-color: rgba(248, 113, 113, 0.75);
+      background: radial-gradient(circle at 50% 0%, rgba(75, 14, 18, 0.94), rgba(18, 6, 10, 0.95));
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.8), 0 0 80px rgba(220, 38, 38, 0.4);
+    }
+
+    @keyframes bannerIn {
+      from { opacity: 0; transform: scale(0.88) translateY(16px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .banner-kicker {
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--aqua);
+      margin-bottom: 10px;
+    }
+
+    .banner-card.danger .banner-kicker {
+      color: #fca5a5;
+    }
+
+    .banner-headline {
+      font-family: var(--font-display);
+      font-size: clamp(2.1rem, 5vw, 3.8rem);
+      font-weight: 900;
+      line-height: 1.08;
+      margin: 0;
+      letter-spacing: 0.05em;
+      background: linear-gradient(180deg, #fff 0%, #fde68a 60%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .banner-card.danger .banner-headline {
+      background: linear-gradient(180deg, #fff 0%, #fecaca 55%, #ef4444 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .banner-sub {
+      margin: 14px 0 0;
+      font-size: clamp(1.05rem, 2vw, 1.35rem);
+      font-weight: 700;
+      color: #e2e8f0;
+      letter-spacing: 0.04em;
+    }
+
+    .banner-stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+
+    .banner-stat-box {
+      padding: 12px 22px;
+      border-radius: 14px;
+      background: rgba(6, 19, 31, 0.72);
+      border: 1px solid rgba(125, 211, 252, 0.24);
+      min-width: 165px;
+    }
+
+    .banner-actions {
+      margin-top: 24px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* ==================== TEACHER CONTROL DRAWER ==================== */
+    #teacher-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: min(420px, 95vw);
+      z-index: 35;
+      background: rgba(6, 17, 29, 0.95);
+      backdrop-filter: blur(16px);
+      border-left: 1px solid var(--border-glass);
+      box-shadow: -20px 0 60px rgba(0, 0, 0, 0.65);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+      transform: translateX(0);
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+      pointer-events: auto;
+    }
+
+    #teacher-drawer.collapsed {
+      transform: translateX(105%);
+      pointer-events: none;
+    }
+
+    #teacher-drawer.full-control-mode {
+      width: 100%;
+      max-width: 980px;
+      left: 50%;
+      right: auto;
+      transform: translateX(-50%);
+      border-left: 1px solid var(--border-glass);
+      border-right: 1px solid var(--border-glass);
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+      padding-bottom: 12px;
+    }
+
+    .drawer-title {
+      font-family: var(--font-display);
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: var(--gold);
+      margin: 0;
+    }
+
+    .teacher-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .kpi-box {
+      background: var(--bg-card);
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .kpi-box .k-lbl {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .kpi-box .k-val {
+      font-family: var(--font-mono);
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #fff;
+      margin-top: 2px;
+    }
+
+    .btn-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .ctrl-btn {
+      padding: 11px 12px;
+      border-radius: 11px;
+      border: 1px solid rgba(148, 163, 184, 0.22);
+      background: rgba(15, 38, 59, 0.85);
+      color: #f8fafc;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.86rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .ctrl-btn:hover:not(:disabled) {
+      border-color: var(--aqua);
+      background: rgba(24, 58, 88, 0.95);
+    }
+
+    .ctrl-btn:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+    }
+
+    .ctrl-btn.gold {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border-color: #fbbf24;
+      color: #1a0b00;
+    }
+
+    .ctrl-btn.danger {
+      background: rgba(185, 28, 28, 0.32);
+      border-color: rgba(248, 113, 113, 0.5);
+      color: #fecaca;
+    }
+
+    .island-override-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+
+    .isl-pick-btn {
+      padding: 9px 4px;
+      border-radius: 10px;
+      border: 1px solid rgba(125, 211, 252, 0.25);
+      background: rgba(10, 28, 44, 0.85);
+      color: #e0f2fe;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .isl-pick-btn:hover:not(:disabled) {
+      border-color: var(--coral);
+      background: rgba(220, 38, 38, 0.28);
+      color: #fff;
+    }
+
+    .isl-pick-btn.destroyed {
+      opacity: 0.28;
+      text-decoration: line-through;
+      cursor: not-allowed;
+      border-color: rgba(148, 163, 184, 0.15);
+    }
+
+    /* ==================== ELIMINATION CONFIRMATION MODAL ==================== */
+    #elim-modal {
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(3, 10, 18, 0.72);
+      backdrop-filter: blur(8px);
+      pointer-events: auto;
+    }
+
+    .elim-card {
+      width: 100%;
+      max-width: 480px;
+      background: var(--bg-panel);
+      border: 2px solid var(--border-gold);
+      border-radius: 22px;
+      padding: 26px;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.75);
+      text-align: center;
+    }
+
+    .stepper-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      margin: 18px 0;
+    }
+
+    .stepper-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      border: 1px solid rgba(125, 211, 252, 0.35);
+      background: rgba(14, 36, 56, 0.9);
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .stepper-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+    .elim-num-input {
+      width: 100px;
+      text-align: center;
+      font-family: var(--font-mono) !important;
+      font-size: 2rem !important;
+      padding: 8px !important;
+    }
+
+    .elim-warning {
+      font-size: 0.82rem;
+      color: #fca5a5;
+      min-height: 20px;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    /* Winner Input */
+    .winner-input-wrap {
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .winner-name-input {
+      width: min(320px, 80vw);
+      text-align: center;
+      font-size: 1.15rem !important;
+      padding: 12px 16px !important;
+      border-color: rgba(251, 191, 36, 0.5) !important;
+    }
+  </style>
+</head>
+<body>
+  <!-- Full-Screen 3D Tropical Environment Canvas -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- ==================== 1. TEACHER SETUP SCREEN ==================== -->
+  <div id="setup-screen" class="screen-layer">
+    <div class="setup-shell">
+      <div class="brand-header">
+        <div class="brand-title-wrap">
+          <div class="brand-emblem">🏝️</div>
+          <div>
+            <h1 class="brand-title">DESTROYING ISLAND</h1>
+            <p class="brand-sub">Classroom Survival Arena</p>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="edtechra-pill">EdTechra Interactive Classroom</div>
+          <button type="button" class="btn-secondary" id="btn-close-setup" title="Close Setup" style="padding:7px 12px;font-size:0.95rem;border-radius:999px;">✕</button>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <!-- Students -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span class="control-label">Number of Students</span>
+            <span class="control-value-badge" id="cfg-students-badge">24</span>
+          </div>
+          <div class="range-row">
+            <input type="range" id="cfg-students-range" min="2" max="100" value="24" />
+            <input type="number" id="cfg-students-num" min="2" max="200" value="24" style="width:76px;text-align:center;" />
+          </div>
+        </div>
+
+        <!-- Islands -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span class="control-label">Number of Islands (Chair Groups)</span>
+            <span class="control-value-badge" id="cfg-islands-badge">6 Islands</span>
+          </div>
+          <div class="range-row">
+            <input type="range" id="cfg-islands-range" min="3" max="10" value="6" />
+          </div>
+        </div>
+
+        <!-- Countdown Duration -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span class="control-label">Countdown Duration</span>
+            <span class="control-value-badge" id="cfg-duration-badge">20s</span>
+          </div>
+          <div class="chip-grid" id="duration-chips">
+            <button type="button" class="chip-btn" data-val="10">10s</button>
+            <button type="button" class="chip-btn" data-val="15">15s</button>
+            <button type="button" class="chip-btn active" data-val="20">20s</button>
+            <button type="button" class="chip-btn" data-val="30">30s</button>
+            <button type="button" class="chip-btn" data-val="45">45s</button>
+            <button type="button" class="chip-btn" data-val="60">60s</button>
+          </div>
+        </div>
+
+        <!-- Mode & Intensity -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span class="control-label">Animation Intensity &amp; Rules</span>
+          </div>
+          <div class="chip-grid" id="intensity-chips">
+            <button type="button" class="chip-btn" data-val="normal">Normal Intensity</button>
+            <button type="button" class="chip-btn active" data-val="cinematic">Cinematic Intensity</button>
+          </div>
+        </div>
+
+        <!-- Audio Toggles & Volume -->
+        <div class="toggle-grid">
+          <div class="toggle-card on" id="toggle-music" data-key="music">
+            <span class="toggle-label">🎵 Background Music</span>
+            <div class="switch-pill"></div>
+          </div>
+          <div class="toggle-card on" id="toggle-sfx" data-key="sfx">
+            <span class="toggle-label">💥 Sound Effects</span>
+            <div class="switch-pill"></div>
+          </div>
+          <div class="toggle-card on" id="toggle-voice" data-key="voice">
+            <span class="toggle-label">📢 Voice Announcements</span>
+            <div class="switch-pill"></div>
+          </div>
+          <div class="toggle-card on" id="toggle-autointro" data-key="mode_info" style="cursor:default;opacity:0.9;">
+            <span class="toggle-label">🏝️ Restore All Islands</span>
+            <span style="font-size:0.75rem;color:var(--emerald);font-weight:800;">EACH ROUND</span>
+          </div>
+        </div>
+
+        <div class="control-group" style="padding:12px 16px;">
+          <div class="control-label-row" style="margin-bottom:6px;">
+            <span class="control-label">Music Volume</span>
+            <span class="control-value-badge" id="cfg-volume-badge">45%</span>
+          </div>
+          <div class="range-row">
+            <input type="range" id="cfg-volume-range" min="0" max="100" value="45" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary & Launch -->
+      <div class="summary-panel">
+        <div>
+          <h2 class="summary-title">Game Summary</h2>
+          <div class="summary-list">
+            <div class="summary-row"><span>Game Mode</span><span>Standard Survival</span></div>
+            <div class="summary-row"><span>Students</span><span id="sum-students">24 Players</span></div>
+            <div class="summary-row"><span>Active Islands</span><span id="sum-islands">6 Islands (01–06)</span></div>
+            <div class="summary-row"><span>Round Timer</span><span id="sum-duration">20 Seconds</span></div>
+            <div class="summary-row"><span>Island Selection</span><span>Random (Restored Each Round)</span></div>
+            <div class="summary-row"><span>Background Music</span><span id="sum-music">ON</span></div>
+            <div class="summary-row"><span>Sound Effects</span><span id="sum-sfx">ON</span></div>
+            <div class="summary-row"><span>Voice Alerts</span><span id="sum-voice">ON</span></div>
+            <div class="summary-row"><span>Visual FX</span><span id="sum-intensity">Cinematic</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button type="button" class="btn-primary-hero" id="btn-start-game">START GAME</button>
+          <button type="button" class="btn-secondary" id="btn-open-popout-setup">📺 Open Separate Projector Window</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Reopen Setup Button (when Setup is closed) -->
+  <div id="setup-reopen-bar" class="projector-quick-tools hidden">
+    <button type="button" class="pill-tool-btn" id="btn-reopen-setup">⚙️ Open Game Setup</button>
+  </div>
+
+  <!-- ==================== 2. PROJECTOR HUD ==================== -->
+  <div id="projector-hud" class="screen-layer hidden">
+    <div class="hud-top-bar">
+      <div class="hud-badge">
+        <div>
+          <div class="hud-stat-label">Current Round</div>
+          <div class="hud-stat-val" id="hud-round">ROUND 01</div>
+        </div>
+      </div>
+
+      <div class="hud-badge" style="gap:24px;">
+        <div>
+          <div class="hud-stat-label">Islands Left</div>
+          <div class="hud-stat-val" id="hud-islands">6</div>
+        </div>
+        <div style="width:1px;height:36px;background:rgba(148,163,184,0.22);"></div>
+        <div>
+          <div class="hud-stat-label">Students Left</div>
+          <div class="hud-stat-val" id="hud-students" style="color:var(--gold);">24</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Giant Countdown Dock -->
+  <div id="timer-dock" class="timer-center-dock hidden">
+    <div class="timer-ring-wrap" id="timer-ring-wrap">
+      <svg class="timer-svg" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="8" />
+        <circle id="timer-arc" cx="60" cy="60" r="52" fill="none" stroke="#22d3ee" stroke-width="8" stroke-linecap="round"
+                stroke-dasharray="326.73" stroke-dashoffset="0" />
+      </svg>
+      <div class="timer-number" id="timer-number">20</div>
+    </div>
+    <div class="timer-sub-pill" id="timer-status-pill">CHOOSE YOUR ISLAND</div>
+  </div>
+
+  <!-- Quick Projector Tools -->
+  <div id="projector-tools" class="projector-quick-tools hidden">
+    <button type="button" class="pill-tool-btn" id="btn-fullscreen" title="Toggle Fullscreen (F)">⛶ Fullscreen</button>
+    <button type="button" class="pill-tool-btn" id="btn-toggle-drawer" title="Teacher Controls (C)">🎛️ Teacher Controls</button>
+  </div>
+
+  <!-- ==================== 3. CENTER CINEMATIC OVERLAY ==================== -->
+  <div id="cinematic-overlay" class="screen-layer hidden"></div>
+
+  <!-- ==================== 4. TEACHER CONTROL DRAWER ==================== -->
+  <aside id="teacher-drawer" class="collapsed">
+    <div class="drawer-header">
+      <h3 class="drawer-title">🎛️ TEACHER CONTROLS</h3>
+      <div style="display:flex;gap:6px;">
+        <button type="button" class="btn-secondary" id="btn-popout-projector" style="padding:6px 10px;font-size:0.76rem;">📺 Pop-Out Projector</button>
+        <button type="button" class="btn-secondary" id="btn-close-drawer" style="padding:6px 10px;font-size:0.76rem;">✕</button>
+      </div>
+    </div>
+
+    <div class="teacher-kpi-grid">
+      <div class="kpi-box"><div class="k-lbl">Round</div><div class="k-val" id="tc-round">01</div></div>
+      <div class="kpi-box"><div class="k-lbl">Islands</div><div class="k-val" id="tc-islands">6</div></div>
+      <div class="kpi-box"><div class="k-lbl">Students</div><div class="k-val" id="tc-students" style="color:var(--gold);">24</div></div>
+    </div>
+
+    <div style="font-size:0.78rem;color:var(--aqua);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;">
+      Phase: <span id="tc-phase-label" style="color:#fff;">INTRO</span>
+    </div>
+
+    <div class="btn-grid-2">
+      <button type="button" class="ctrl-btn gold" id="tc-btn-primary">▶ Begin Round</button>
+      <button type="button" class="ctrl-btn" id="tc-btn-pause">⏸ Pause</button>
+      <button type="button" class="ctrl-btn" id="tc-btn-skip">⏭ Skip Timer</button>
+      <button type="button" class="ctrl-btn" id="tc-btn-restart-round">↺ Restart Round</button>
+    </div>
+
+    <div class="control-group" style="padding:12px;">
+      <div class="control-label-row" style="margin-bottom:8px;">
+        <span class="control-label" style="font-size:0.76rem;">Manual Island Selection (Override)</span>
+      </div>
+      <div class="island-override-grid" id="tc-island-grid"></div>
+    </div>
+
+    <div class="control-group" style="padding:12px;">
+      <div class="control-label-row" style="margin-bottom:8px;">
+        <span class="control-label" style="font-size:0.76rem;">Live Audio Controls</span>
+      </div>
+      <div class="chip-grid" style="margin-bottom:10px;">
+        <button type="button" class="chip-btn active" id="tc-audio-music">🎵 Music: ON</button>
+        <button type="button" class="chip-btn active" id="tc-audio-sfx">💥 SFX: ON</button>
+        <button type="button" class="chip-btn active" id="tc-audio-voice">📢 Voice: ON</button>
+      </div>
+      <div class="control-label-row" style="margin-bottom:4px;">
+        <span class="control-label" style="font-size:0.72rem;">Music Volume</span>
+        <span class="control-value-badge" id="tc-volume-badge" style="font-size:0.78rem;">45%</span>
+      </div>
+      <div class="range-row">
+        <input type="range" id="tc-volume-range" min="0" max="100" value="45" />
+      </div>
+    </div>
+
+    <button type="button" class="ctrl-btn danger" id="tc-btn-end-game" style="margin-top:auto;">⏹ End Game &amp; Return to Setup</button>
+  </aside>
+
+  <!-- ==================== 5. ELIMINATION CONFIRMATION MODAL ==================== -->
+  <div id="elim-modal" class="screen-layer hidden">
+    <div class="elim-card" style="position:relative;">
+      <button type="button" class="btn-secondary" id="btn-close-elim" title="Close" style="position:absolute;top:14px;right:14px;padding:5px 10px;font-size:0.85rem;border-radius:999px;">✕</button>
+      <div class="banner-kicker" style="color:#fca5a5;">ISLAND <span id="elim-island-num">03</span> DESTROYED</div>
+      <h2 style="font-family:var(--font-display);margin:4px 0 8px;font-size:1.55rem;color:#fff;">Confirm Eliminations</h2>
+      <p style="margin:0;color:#cbd5e1;font-size:0.92rem;">
+        Enter how many students were standing on <strong>Island <span id="elim-island-num-2">03</span></strong>.
+      </p>
+
+      <div class="stepper-row">
+        <button type="button" class="stepper-btn" id="elim-minus">−</button>
+        <input type="number" id="elim-count-input" class="elim-num-input" min="0" value="0" />
+        <button type="button" class="stepper-btn" id="elim-plus">+</button>
+      </div>
+
+      <div class="elim-warning" id="elim-warning"></div>
+
+      <div style="display:flex;justify-content:space-between;font-size:0.86rem;color:#94a3b8;margin-bottom:16px;padding:10px 14px;background:rgba(6,19,31,0.7);border-radius:12px;">
+        <span>Before: <strong id="elim-before" style="color:#fff;">24</strong></span>
+        <span>Remaining After: <strong id="elim-after" style="color:var(--gold);">24</strong></span>
+      </div>
+
+      <button type="button" class="btn-primary-hero" id="btn-confirm-elim">CONFIRM &amp; CONTINUE</button>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      'use strict';
+
+      /* ==================== CONSTANTS & STORAGE ==================== */
+      const STORAGE_KEY = 'destroying_island_settings_v1';
+      const CHANNEL_NAME = 'destroying_island_sync_v1';
+      const URL_PARAMS = new URLSearchParams(window.location.search);
+      const IS_POPOUT_PROJECTOR = URL_PARAMS.get('mode') === 'projector';
+
+      const syncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel(CHANNEL_NAME) : null;
+
+      /* ==================== AUDIO ENGINE (WEB AUDIO + SPEECH) ==================== */
+      class SoundEngine {
+        constructor() {
+          this.ctx = null;
+          this.masterGain = null;
+          this.musicGain = null;
+          this.sfxGain = null;
+          this.bgmPlaying = false;
+          this.musicOn = true;
+          this.sfxOn = true;
+          this.voiceOn = true;
+          this.musicVolume = 0.32;
+          this.duckFactor = 1.0;
+          this.bgmTargetVol = this.musicVolume;
+          this.bgmAudio = new Audio('assets/destroying-island/bgm.mp3');
+          this.bgmAudio.loop = true;
+          this.bgmAudio.preload = 'auto';
+          this.bgmAudio.volume = this.musicVolume;
+
+          this.activeVoAudio = null;
+          this.duckRestoreTimer = null;
+          this.voClips = {
+            intro: 'assets/destroying-island/vo/vo-intro.wav',
+            timesUp: 'assets/destroying-island/vo/vo-times-up.wav',
+            destroyed: 'assets/destroying-island/vo/vo-island-destroyed.wav',
+            champion: 'assets/destroying-island/vo/vo-champion.wav'
+          };
+          this.preloadedVo = {};
+          Object.entries(this.voClips).forEach(([k, src]) => {
+            const a = new Audio(src);
+            a.preload = 'auto';
+            this.preloadedVo[k] = a;
+          });
+        }
+
+        _applyBgmVolume() {
+          if (!this.bgmAudio) return;
+          const target = this.musicOn ? Math.max(0, Math.min(1, this.musicVolume * this.duckFactor)) : 0;
+          this.bgmTargetVol = target;
+          this.bgmAudio.volume = target;
+        }
+
+        duckBgm(factor = 0.3, holdMs = 0) {
+          if (this.duckRestoreTimer) {
+            clearTimeout(this.duckRestoreTimer);
+            this.duckRestoreTimer = null;
+          }
+          this.duckFactor = factor;
+          this._applyBgmVolume();
+          if (holdMs > 0) {
+            this.duckRestoreTimer = setTimeout(() => {
+              this.restoreBgmDuck();
+            }, holdMs);
+          }
+        }
+
+        restoreBgmDuck() {
+          if (this.duckRestoreTimer) {
+            clearTimeout(this.duckRestoreTimer);
+            this.duckRestoreTimer = null;
+          }
+          // Smoothly ramp duckFactor back to 1.0 over ~450ms
+          const start = this.duckFactor;
+          const steps = 12;
+          let s = 0;
+          const stepFn = () => {
+            s++;
+            this.duckFactor = start + (1.0 - start) * (s / steps);
+            this._applyBgmVolume();
+            if (s < steps) setTimeout(stepFn, 38);
+          };
+          stepFn();
+        }
+
+        ensureContext() {
+          if (!this.ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return false;
+            this.ctx = new AudioCtx();
+            this.masterGain = this.ctx.createGain();
+            this.masterGain.gain.value = 0.9;
+            this.masterGain.connect(this.ctx.destination);
+
+            this.musicGain = this.ctx.createGain();
+            this.musicGain.gain.value = this.musicOn ? 0.28 : 0;
+            this.musicGain.connect(this.masterGain);
+
+            this.sfxGain = this.ctx.createGain();
+            this.sfxGain.gain.value = this.sfxOn ? 0.85 : 0;
+            this.sfxGain.connect(this.masterGain);
+          }
+          if (this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => {});
+          }
+          return true;
+        }
+
+        setPreferences(musicOn, sfxOn, voiceOn, musicVolume = this.musicVolume) {
+          this.musicOn = musicOn;
+          this.sfxOn = sfxOn;
+          this.voiceOn = voiceOn;
+          this.musicVolume = Math.max(0, Math.min(1, musicVolume));
+
+          if (this.bgmAudio) {
+            this._applyBgmVolume();
+            if (this.bgmPlaying) {
+              if (this.musicOn && this.bgmAudio.paused) {
+                this.bgmAudio.play().catch(() => {});
+              } else if (!this.musicOn && !this.bgmAudio.paused) {
+                this.bgmAudio.pause();
+              }
+            }
+          }
+          if (this.musicGain && this.ctx) {
+            this.musicGain.gain.setTargetAtTime(musicOn ? 0.28 * (this.musicVolume / 0.32) : 0, this.ctx.currentTime, 0.08);
+          }
+          if (this.sfxGain && this.ctx) {
+            this.sfxGain.gain.setTargetAtTime(sfxOn ? 0.85 : 0, this.ctx.currentTime, 0.05);
+          }
+          if (!voiceOn) {
+            this.stopVoice();
+          }
+        }
+
+        tone(freq, dur, type = 'sine', vol = 0.25, delay = 0, dest = 'sfx', slideTo = null) {
+          if (!this.ensureContext()) return;
+          if (dest === 'sfx' && !this.sfxOn) return;
+          const now = this.ctx.currentTime + delay;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, now);
+          if (slideTo) {
+            osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), now + dur);
+          }
+          gain.gain.setValueAtTime(0.0001, now);
+          gain.gain.linearRampToValueAtTime(vol, now + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+          osc.connect(gain);
+          gain.connect(dest === 'music' ? this.musicGain : this.sfxGain);
+          osc.start(now);
+          osc.stop(now + dur + 0.03);
+        }
+
+        noiseBurst(dur, filterFreq = 800, filterType = 'lowpass', vol = 0.5, delay = 0) {
+          if (!this.ensureContext() || !this.sfxOn) return;
+          const now = this.ctx.currentTime + delay;
+          const bufSize = Math.floor(this.ctx.sampleRate * dur);
+          const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+          const data = buf.getChannelData(0);
+          for (let i = 0; i < bufSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+          }
+          const src = this.ctx.createBufferSource();
+          src.buffer = buf;
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = filterType;
+          filter.frequency.setValueAtTime(filterFreq, now);
+          filter.frequency.exponentialRampToValueAtTime(Math.max(80, filterFreq * 0.22), now + dur);
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.001, now);
+          gain.gain.linearRampToValueAtTime(vol, now + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+          src.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.sfxGain);
+          src.start(now);
+        }
+
+        /* 1. Intro Cinematic Music */
+        playIntroFanfare() {
+          this.startBackgroundMusic();
+        }
+
+        /* 2. Continuous Provided Background Music (loops smoothly without restarting between rounds) */
+        startBackgroundMusic() {
+          if (IS_POPOUT_PROJECTOR) return;
+          this.bgmPlaying = true;
+          if (!this.bgmAudio) return;
+          this.bgmAudio.volume = this.musicOn ? this.musicVolume : 0;
+          if (this.musicOn && this.bgmAudio.paused) {
+            this.bgmAudio.play().catch(() => {});
+          }
+        }
+
+        stopBackgroundMusic() {
+          this.bgmPlaying = false;
+          if (this.bgmAudio) {
+            this.bgmAudio.pause();
+            this.bgmAudio.currentTime = 0;
+          }
+        }
+
+        /* 3. Countdown Tick */
+        playTick() {
+          this.tone(720, 0.06, 'sine', 0.18, 0, 'sfx', 540);
+        }
+
+        /* 4. Final 5-Second Urgent Alert */
+        playFinalFiveTick(secLeft) {
+          const pitch = 680 + (5 - secLeft) * 95;
+          this.tone(pitch, 0.16, 'sawtooth', 0.22, 0, 'sfx');
+          this.tone(pitch * 1.5, 0.14, 'triangle', 0.16, 0.03, 'sfx');
+        }
+
+        /* 5. Island Selection Suspense Roulette Tick */
+        playRouletteTick(progress) {
+          const freq = 420 + progress * 540;
+          this.tone(freq, 0.07, 'triangle', 0.24, 0, 'sfx');
+        }
+
+        /* 6. Island Warning Alarm */
+        playWarningAlarm() {
+          for (let i = 0; i < 3; i++) {
+            this.tone(580, 0.22, 'sawtooth', 0.28, i * 0.28, 'sfx', 420);
+            this.tone(870, 0.22, 'square', 0.14, i * 0.28, 'sfx', 630);
+          }
+        }
+
+        /* 7. Explosion Sound */
+        playExplosion() {
+          this.tone(110, 0.95, 'sawtooth', 0.55, 0, 'sfx', 24);
+          this.tone(75, 1.2, 'sine', 0.65, 0.02, 'sfx', 22);
+          this.noiseBurst(1.35, 1400, 'lowpass', 0.75, 0);
+          this.noiseBurst(0.6, 2600, 'bandpass', 0.4, 0.08);
+        }
+
+        /* 8. Ocean Splash */
+        playSplash() {
+          this.noiseBurst(1.4, 2400, 'bandpass', 0.55, 0.05);
+          this.tone(240, 0.45, 'sine', 0.22, 0.06, 'sfx', 95);
+        }
+
+        /* 9. Round Transition Sound */
+        playRoundTransition() {
+          [329.63, 440, 523.25, 659.25].forEach((f, i) => {
+            this.tone(f, 0.35, 'triangle', 0.22, i * 0.08, 'sfx');
+          });
+        }
+
+        /* 10. Victory Fanfare & 11. Celebration Pops */
+        playVictoryFanfare() {
+          const fanfare = [
+            [523.25, 0.18, 0],
+            [659.25, 0.18, 0.14],
+            [783.99, 0.18, 0.28],
+            [1046.5, 0.75, 0.44],
+            [783.99, 0.22, 0.76],
+            [1046.5, 1.1, 0.96]
+          ];
+          fanfare.forEach(([f, d, t]) => this.tone(f, d, 'triangle', 0.34, t, 'sfx'));
+        }
+
+        playFireworkPop() {
+          this.tone(180 + Math.random() * 200, 0.22, 'sine', 0.15, 0, 'sfx', 60);
+          this.noiseBurst(0.28, 3200, 'highpass', 0.22, 0.04);
+        }
+
+        stopVoice() {
+          if (this.activeVoAudio) {
+            this.activeVoAudio.pause();
+            this.activeVoAudio.currentTime = 0;
+            this.activeVoAudio = null;
+          }
+          if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+          }
+        }
+
+        playVoice(key, fallbackText = '') {
+          if (!this.voiceOn || IS_POPOUT_PROJECTOR) return;
+          this.stopVoice();
+          const clip = this.preloadedVo[key];
+          if (clip) {
+            try {
+              clip.currentTime = 0;
+              clip.volume = 1.0;
+              this.activeVoAudio = clip;
+              this.duckBgm(0.28);
+              clip.onended = () => {
+                if (this.activeVoAudio === clip) this.activeVoAudio = null;
+                this.restoreBgmDuck();
+              };
+              clip.play().catch(() => {
+                this.restoreBgmDuck();
+                if (fallbackText) this.speak(fallbackText);
+              });
+              return;
+            } catch (_) {}
+          }
+          if (fallbackText) this.speak(fallbackText);
+        }
+
+        speak(text) {
+          if (!this.voiceOn || !('speechSynthesis' in window) || IS_POPOUT_PROJECTOR) return;
+          try {
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.rate = 0.98;
+            utter.pitch = 1.0;
+            utter.volume = 0.95;
+            window.speechSynthesis.speak(utter);
+          } catch (_) {}
+        }
+
+        stopAll() {
+          this.stopBackgroundMusic();
+          this.stopVoice();
+          this.duckFactor = 1.0;
+          this._applyBgmVolume();
+        }
+      }
+
+      const audio = new SoundEngine();
+
+      /* ==================== ASSET LOADER ==================== */
+      const assets = {
+        ocean: null,
+        islands: [],
+        loadedCount: 0,
+        totalCount: 11
+      };
+
+      function loadAssets() {
+        const oceanImg = new Image();
+        oceanImg.src = 'assets/destroying-island/ocean-bg.jpg';
+        oceanImg.onload = () => { assets.ocean = oceanImg; assets.loadedCount++; };
+
+        for (let i = 1; i <= 10; i++) {
+          const img = new Image();
+          img.src = `assets/destroying-island/island-${i}.png`;
+          img.onload = () => {
+            assets.islands[i - 1] = img;
+            assets.loadedCount++;
+          };
+        }
+      }
+
+      /* ==================== GAME STATE ==================== */
+      const DEFAULT_SETTINGS = {
+        students: 24,
+        islands: 6,
+        duration: 20,
+        intensity: 'cinematic',
+        music: true,
+        sfx: true,
+        voice: true,
+        musicVolume: 32
+      };
+
+      function loadSavedSettings() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return { ...DEFAULT_SETTINGS };
+          return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+        } catch {
+          return { ...DEFAULT_SETTINGS };
+        }
+      }
+
+      function saveSettings(s) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+      }
+
+      const state = {
+        settings: loadSavedSettings(),
+        phase: 'SETUP', // SETUP | INTRO | COUNTDOWN | SELECTING | SELECTED_REVEAL | DESTROYING | CONFIRM_ELIM | NEXT_ROUND | WINNER
+        round: 1,
+        remainingStudents: 24,
+        islands: [], // { id, imgIndex, active, xNorm, yNorm, scale, bobPhase, sinkProgress, shakeAmp, cracks[] }
+        timeLeft: 20,
+        lastWholeSec: 20,
+        paused: false,
+        selectedIslandId: null,
+        rouletteHighlightId: null,
+        phaseTimer: 0,
+        winnerName: '',
+        screenShake: 0,
+        flashAlpha: 0,
+        particles: [],
+        rings: [],
+        confetti: [],
+        clouds: Array.from({ length: 6 }, (_, i) => ({
+          x: Math.random(),
+          y: 0.08 + Math.random() * 0.45,
+          w: 0.22 + Math.random() * 0.18,
+          speed: 0.004 + Math.random() * 0.005,
+          alpha: 0.06 + Math.random() * 0.07
+        }))
+      };
+
+      /* ==================== ISLAND LAYOUT GENERATOR ==================== */
+      function buildIslands(count) {
+        const list = [];
+        // Balanced 2-row or arc layout for 3..10 islands
+        const topRowCount = count <= 4 ? count : Math.ceil(count / 2);
+        const botRowCount = count - topRowCount;
+
+        for (let i = 0; i < count; i++) {
+          let xNorm, yNorm, depthScale;
+          if (botRowCount === 0) {
+            const t = count === 1 ? 0.5 : (i + 0.5) / count;
+            xNorm = 0.12 + t * 0.76;
+            yNorm = 0.55 + Math.sin(t * Math.PI) * 0.06;
+            depthScale = 1.0;
+          } else if (i < topRowCount) {
+            const t = (i + 0.5) / topRowCount;
+            xNorm = 0.14 + t * 0.72;
+            yNorm = 0.40 + (i % 2 === 0 ? -0.02 : 0.02);
+            depthScale = 0.84;
+          } else {
+            const j = i - topRowCount;
+            const t = (j + 0.5) / botRowCount;
+            xNorm = 0.12 + t * 0.76;
+            yNorm = 0.68 + (j % 2 === 0 ? 0.025 : -0.02);
+            depthScale = 1.04;
+          }
+
+          list.push({
+            id: i + 1,
+            imgIndex: i % 10,
+            active: true,
+            xNorm,
+            yNorm,
+            scale: depthScale,
+            bobPhase: Math.random() * Math.PI * 2,
+            sinkProgress: 0, // 0 = floating, 1 = sunk
+            shakeAmp: 0,
+            cracks: generateCracks()
+          });
+        }
+        return list;
+      }
+
+      function generateCracks() {
+        const cracks = [];
+        const count = 6;
+        for (let i = 0; i < count; i++) {
+          const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
+          const pts = [{ x: 0, y: 0 }];
+          let cx = 0, cy = 0;
+          for (let s = 1; s <= 4; s++) {
+            const r = s * 0.22;
+            const a = angle + (Math.random() - 0.5) * 0.55;
+            cx = Math.cos(a) * r;
+            cy = Math.sin(a) * r * 0.7;
+            pts.push({ x: cx, y: cy });
+          }
+          cracks.push(pts);
+        }
+        return cracks;
+      }
+
+      /* ==================== DOM REFERENCES ==================== */
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+
+      const setupScreen = document.getElementById('setup-screen');
+      const projectorHud = document.getElementById('projector-hud');
+      const timerDock = document.getElementById('timer-dock');
+      const timerRingWrap = document.getElementById('timer-ring-wrap');
+      const timerArc = document.getElementById('timer-arc');
+      const timerNumber = document.getElementById('timer-number');
+      const timerStatusPill = document.getElementById('timer-status-pill');
+      const projectorTools = document.getElementById('projector-tools');
+      const cinematicOverlay = document.getElementById('cinematic-overlay');
+      const teacherDrawer = document.getElementById('teacher-drawer');
+      const elimModal = document.getElementById('elim-modal');
+
+      /* ==================== SETUP UI BINDINGS ==================== */
+      const cfgStudentsRange = document.getElementById('cfg-students-range');
+      const cfgStudentsNum = document.getElementById('cfg-students-num');
+      const cfgIslandsRange = document.getElementById('cfg-islands-range');
+
+      function syncSetupUI() {
+        const s = state.settings;
+        cfgStudentsRange.value = Math.min(100, s.students);
+        cfgStudentsNum.value = s.students;
+        cfgIslandsRange.value = s.islands;
+
+        document.getElementById('cfg-students-badge').textContent = s.students;
+        document.getElementById('cfg-islands-badge').textContent = `${s.islands} Islands`;
+        document.getElementById('cfg-duration-badge').textContent = `${s.duration}s`;
+
+        document.querySelectorAll('#duration-chips .chip-btn').forEach(btn => {
+          btn.classList.toggle('active', Number(btn.dataset.val) === s.duration);
+        });
+        document.querySelectorAll('#intensity-chips .chip-btn').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.val === s.intensity);
+        });
+
+        ['music', 'sfx', 'voice'].forEach(k => {
+          document.getElementById(`toggle-${k}`).classList.toggle('on', !!s[k]);
+        });
+
+        const vol = typeof s.musicVolume === 'number' ? s.musicVolume : 45;
+        document.getElementById('cfg-volume-range').value = vol;
+        document.getElementById('cfg-volume-badge').textContent = `${vol}%`;
+        document.getElementById('tc-volume-range').value = vol;
+        document.getElementById('tc-volume-badge').textContent = `${vol}%`;
+
+        // Summary
+        document.getElementById('sum-students').textContent = `${s.students} Players`;
+        document.getElementById('sum-islands').textContent = `${s.islands} Islands (01–${String(s.islands).padStart(2, '0')})`;
+        document.getElementById('sum-duration').textContent = `${s.duration} Seconds`;
+        document.getElementById('sum-music').textContent = s.music ? 'ON' : 'OFF';
+        document.getElementById('sum-sfx').textContent = s.sfx ? 'ON' : 'OFF';
+        document.getElementById('sum-voice').textContent = s.voice ? 'ON' : 'OFF';
+        document.getElementById('sum-intensity').textContent = s.intensity === 'cinematic' ? 'Cinematic' : 'Normal';
+
+        audio.setPreferences(s.music, s.sfx, s.voice, vol / 100);
+        saveSettings(s);
+      }
+
+      cfgStudentsRange.addEventListener('input', e => {
+        state.settings.students = Math.max(2, Number(e.target.value));
+        syncSetupUI();
+      });
+      cfgStudentsNum.addEventListener('input', e => {
+        state.settings.students = Math.max(2, Math.min(200, Number(e.target.value) || 2));
+        syncSetupUI();
+      });
+      cfgIslandsRange.addEventListener('input', e => {
+        state.settings.islands = Math.max(3, Math.min(10, Number(e.target.value)));
+        syncSetupUI();
+      });
+
+      document.getElementById('duration-chips').addEventListener('click', e => {
+        const btn = e.target.closest('.chip-btn');
+        if (!btn) return;
+        state.settings.duration = Number(btn.dataset.val);
+        syncSetupUI();
+      });
+
+      document.getElementById('intensity-chips').addEventListener('click', e => {
+        const btn = e.target.closest('.chip-btn');
+        if (!btn) return;
+        state.settings.intensity = btn.dataset.val;
+        syncSetupUI();
+      });
+
+      ['music', 'sfx', 'voice'].forEach(k => {
+        document.getElementById(`toggle-${k}`).addEventListener('click', () => {
+          state.settings[k] = !state.settings[k];
+          syncSetupUI();
+          syncLiveAudioButtons();
+        });
+      });
+
+      /* ==================== STATE BROADCAST (FOR POP-OUT PROJECTOR) ==================== */
+      function broadcastState() {
+        if (IS_POPOUT_PROJECTOR || !syncChannel) return;
+        syncChannel.postMessage({
+          type: 'STATE_SYNC',
+          payload: {
+            phase: state.phase,
+            round: state.round,
+            remainingStudents: state.remainingStudents,
+            timeLeft: state.timeLeft,
+            paused: state.paused,
+            selectedIslandId: state.selectedIslandId,
+            rouletteHighlightId: state.rouletteHighlightId,
+            winnerName: state.winnerName,
+            settings: state.settings,
+            islands: state.islands.map(isl => ({
+              id: isl.id,
+              imgIndex: isl.imgIndex,
+              active: isl.active,
+              xNorm: isl.xNorm,
+              yNorm: isl.yNorm,
+              scale: isl.scale,
+              sinkProgress: isl.sinkProgress
+            }))
+          }
+        });
+      }
+
+      if (IS_POPOUT_PROJECTOR && syncChannel) {
+        setupScreen.classList.add('hidden');
+        document.getElementById('btn-toggle-drawer').style.display = 'none';
+        syncChannel.onmessage = (ev) => {
+          if (ev.data?.type === 'STATE_SYNC') {
+            const p = ev.data.payload;
+            const prevPhase = state.phase;
+            state.phase = p.phase;
+            state.round = p.round;
+            state.remainingStudents = p.remainingStudents;
+            state.timeLeft = p.timeLeft;
+            state.paused = p.paused;
+            state.selectedIslandId = p.selectedIslandId;
+            state.rouletteHighlightId = p.rouletteHighlightId;
+            state.winnerName = p.winnerName;
+            state.settings = p.settings;
+            state.islands = p.islands.map((isl, idx) => ({
+              ...isl,
+              bobPhase: state.islands[idx]?.bobPhase ?? idx * 0.9,
+              shakeAmp: (state.phase === 'DESTROYING' && isl.id === state.selectedIslandId) ? 14 : 0,
+              cracks: state.islands[idx]?.cracks ?? generateCracks()
+            }));
+            if (prevPhase !== state.phase) {
+              if (state.phase === 'DESTROYING') triggerDestructionParticles(state.selectedIslandId);
+              if (state.phase === 'WINNER') launchWinnerFireworks();
+            }
+            updateHUDAndOverlays();
+          }
+        };
+      }
+
+      /* ==================== GAME FLOW ACTIONS ==================== */
+      function startGame() {
+        audio.ensureContext();
+        state.round = 1;
+        state.remainingStudents = state.settings.students;
+        state.islands = buildIslands(state.settings.islands);
+        state.selectedIslandId = null;
+        state.rouletteHighlightId = null;
+        state.winnerName = '';
+        state.particles = [];
+        state.rings = [];
+        state.confetti = [];
+        state.paused = false;
+
+        setupScreen.classList.add('hidden');
+        projectorHud.classList.remove('hidden');
+        projectorTools.classList.remove('hidden');
+
+        enterPhase('INTRO');
+      }
+
+      function restoreAllIslands() {
+        state.selectedIslandId = null;
+        state.rouletteHighlightId = null;
+        state.islands.forEach(isl => {
+          isl.active = true;
+          isl.sinkProgress = 0;
+          isl.shakeAmp = 0;
+        });
+      }
+
+      function enterPhase(newPhase) {
+        state.phase = newPhase;
+        state.phaseTimer = 0;
+
+        if (newPhase === 'INTRO') {
+          audio.playIntroFanfare();
+          audio.playVoice('intro', 'Welcome to Destroying Island. Survive until the end!');
+        } else if (newPhase === 'COUNTDOWN') {
+          restoreAllIslands();
+          state.timeLeft = state.settings.duration;
+          state.lastWholeSec = Math.ceil(state.timeLeft);
+          state.paused = false;
+          audio.startBackgroundMusic();
+        } else if (newPhase === 'SELECTING') {
+          const active = state.islands.filter(i => i.active);
+          if (active.length === 0) return;
+          audio.playVoice('timesUp', "Time's up! Freeze where you are!");
+          const chosen = active[Math.floor(Math.random() * active.length)];
+          state.selectedIslandId = chosen.id;
+          runSelectionRoulette(chosen.id);
+        } else if (newPhase === 'SELECTED_REVEAL') {
+          audio.playWarningAlarm();
+          audio.playVoice('destroyed', 'This island is destroyed!');
+          setTimeout(() => {
+            if (state.phase === 'SELECTED_REVEAL') {
+              enterPhase('DESTROYING');
+            }
+          }, 2600);
+        } else if (newPhase === 'DESTROYING') {
+          audio.duckBgm(0.30, 3400);
+          audio.playExplosion();
+          setTimeout(() => audio.playSplash(), 1450);
+          triggerDestructionParticles(state.selectedIslandId);
+          setTimeout(() => {
+            if (state.phase === 'DESTROYING') {
+              const target = state.islands.find(i => i.id === state.selectedIslandId);
+              if (target) target.active = false;
+              enterPhase('CONFIRM_ELIM');
+            }
+          }, 3400);
+        } else if (newPhase === 'CONFIRM_ELIM') {
+          openEliminationModal();
+        } else if (newPhase === 'NEXT_ROUND') {
+          restoreAllIslands();
+          audio.playRoundTransition();
+        } else if (newPhase === 'WINNER') {
+          audio.stopBackgroundMusic();
+          audio.playVictoryFanfare();
+          launchWinnerFireworks();
+          audio.playVoice('champion', 'Champion! You survived the Destroying Island!');
+        } else if (newPhase === 'SETUP') {
+          audio.stopAll();
+          setupScreen.classList.remove('hidden');
+          projectorHud.classList.add('hidden');
+          timerDock.classList.add('hidden');
+          projectorTools.classList.add('hidden');
+          cinematicOverlay.classList.add('hidden');
+          elimModal.classList.add('hidden');
+          teacherDrawer.classList.add('collapsed');
+        }
+
+        updateHUDAndOverlays();
+        broadcastState();
+      }
+
+      /* Suspenseful Roulette Animation */
+      function runSelectionRoulette(targetId) {
+        const active = state.islands.filter(i => i.active);
+        if (active.length === 1) {
+          state.rouletteHighlightId = targetId;
+          enterPhase('SELECTED_REVEAL');
+          return;
+        }
+        const totalSteps = state.settings.intensity === 'cinematic' ? 20 : 12;
+        let step = 0;
+
+        function nextHop() {
+          if (state.phase !== 'SELECTING') return;
+          if (step >= totalSteps) {
+            state.rouletteHighlightId = targetId;
+            enterPhase('SELECTED_REVEAL');
+            return;
+          }
+          const progress = step / totalSteps;
+          const idx = step % active.length;
+          state.rouletteHighlightId = active[idx].id;
+          audio.playRouletteTick(progress);
+          updateHUDAndOverlays();
+          broadcastState();
+          step++;
+          const delay = 65 + Math.pow(progress, 2.2) * 260;
+          setTimeout(nextHop, delay);
+        }
+        nextHop();
+      }
+
+      /* Manual Override Selection */
+      function manualSelectIsland(islandId) {
+        const target = state.islands.find(i => i.id === islandId && i.active);
+        if (!target) return;
+        if (!['COUNTDOWN', 'INTRO', 'NEXT_ROUND'].includes(state.phase)) return;
+        state.selectedIslandId = islandId;
+        state.rouletteHighlightId = islandId;
+        enterPhase('SELECTED_REVEAL');
+      }
+
+      /* ==================== ELIMINATION CONFIRMATION ==================== */
+      function openEliminationModal() {
+        if (IS_POPOUT_PROJECTOR) return;
+        const numStr = String(state.selectedIslandId).padStart(2, '0');
+        document.getElementById('elim-island-num').textContent = numStr;
+        document.getElementById('elim-island-num-2').textContent = numStr;
+        document.getElementById('elim-before').textContent = state.remainingStudents;
+
+        const input = document.getElementById('elim-count-input');
+        input.value = 0;
+        input.max = Math.max(0, state.remainingStudents - 1);
+        updateElimPreview();
+        elimModal.classList.remove('hidden');
+      }
+
+      function updateElimPreview() {
+        const input = document.getElementById('elim-count-input');
+        const warn = document.getElementById('elim-warning');
+        let val = parseInt(input.value, 10);
+        if (isNaN(val) || val < 0) val = 0;
+
+        const maxAllowed = Math.max(0, state.remainingStudents - 1);
+        if (val > maxAllowed && state.remainingStudents > 1) {
+          val = maxAllowed;
+          input.value = val;
+          warn.textContent = 'At least 1 survivor must remain to declare a Champion!';
+        } else {
+          warn.textContent = '';
+        }
+
+        const after = Math.max(1, state.remainingStudents - val);
+        document.getElementById('elim-after').textContent = after;
+      }
+
+      document.getElementById('elim-minus').addEventListener('click', () => {
+        const inp = document.getElementById('elim-count-input');
+        inp.value = Math.max(0, (parseInt(inp.value, 10) || 0) - 1);
+        updateElimPreview();
+      });
+
+      document.getElementById('elim-plus').addEventListener('click', () => {
+        const inp = document.getElementById('elim-count-input');
+        inp.value = (parseInt(inp.value, 10) || 0) + 1;
+        updateElimPreview();
+      });
+
+      document.getElementById('elim-count-input').addEventListener('input', updateElimPreview);
+
+      document.getElementById('btn-confirm-elim').addEventListener('click', () => {
+        const elimCount = Math.max(0, parseInt(document.getElementById('elim-count-input').value, 10) || 0);
+        state.remainingStudents = Math.max(1, state.remainingStudents - elimCount);
+        elimModal.classList.add('hidden');
+
+        if (state.remainingStudents <= 1) {
+          state.islands.forEach(i => { i.active = false; });
+          enterPhase('WINNER');
+        } else {
+          state.round += 1;
+          enterPhase('NEXT_ROUND');
+        }
+      });
+
+      /* ==================== HUD & OVERLAY RENDERING ==================== */
+      function updateHUDAndOverlays() {
+        const activeCount = state.islands.filter(i => i.active).length;
+        const roundStr = `ROUND ${String(state.round).padStart(2, '0')}`;
+
+        document.getElementById('hud-round').textContent = roundStr;
+        document.getElementById('hud-islands').textContent = activeCount;
+        document.getElementById('hud-students').textContent = state.remainingStudents;
+
+        document.getElementById('tc-round').textContent = String(state.round).padStart(2, '0');
+        document.getElementById('tc-islands').textContent = activeCount;
+        document.getElementById('tc-students').textContent = state.remainingStudents;
+        document.getElementById('tc-phase-label').textContent = state.phase.replace('_', ' ');
+
+        // Timer Dock visibility & arc
+        if (state.phase === 'COUNTDOWN') {
+          timerDock.classList.remove('hidden');
+          const whole = Math.max(0, Math.ceil(state.timeLeft));
+          timerNumber.textContent = whole;
+          const frac = Math.max(0, Math.min(1, state.timeLeft / state.settings.duration));
+          const circ = 326.73;
+          timerArc.style.strokeDashoffset = circ * (1 - frac);
+          const isUrgent = whole <= 5 && whole > 0;
+          timerRingWrap.classList.toggle('urgent', isUrgent);
+          timerArc.setAttribute('stroke', isUrgent ? '#ef4444' : '#22d3ee');
+          timerStatusPill.textContent = state.paused ? 'PAUSED' : (isUrgent ? 'FINAL SECONDS!' : 'CHOOSE YOUR ISLAND');
+        } else {
+          timerDock.classList.add('hidden');
+        }
+
+        // Center Cinematic Overlay
+        if (state.phase === 'INTRO') {
+          cinematicOverlay.classList.remove('hidden');
+          cinematicOverlay.innerHTML = `
+            <div class="banner-card">
+              <div class="banner-kicker">EDTECHRA CLASSROOM SURVIVAL</div>
+              <h2 class="banner-headline">DESTROYING ISLAND</h2>
+              <p class="banner-sub">SURVIVE UNTIL THE END!</p>
+              <div class="banner-actions">
+                ${IS_POPOUT_PROJECTOR ? '<div class="timer-sub-pill">WAITING FOR TEACHER TO BEGIN</div>' : '<button type="button" class="btn-primary-hero" style="max-width:280px;" id="ov-begin-btn">BEGIN ROUND 01</button>'}
+              </div>
+            </div>
+          `;
+          const btn = document.getElementById('ov-begin-btn');
+          if (btn) btn.onclick = () => enterPhase('COUNTDOWN');
+        } else if (state.phase === 'SELECTED_REVEAL') {
+          const numStr = String(state.selectedIslandId).padStart(2, '0');
+          cinematicOverlay.classList.remove('hidden');
+          cinematicOverlay.innerHTML = `
+            <div class="banner-card danger">
+              <div class="banner-kicker">TARGET LOCKED</div>
+              <h2 class="banner-headline">ISLAND ${numStr}</h2>
+              <p class="banner-sub" style="color:#fecaca;">THIS ISLAND IS DESTROYED!</p>
+            </div>
+          `;
+        } else if (state.phase === 'NEXT_ROUND') {
+          const rStr = String(state.round).padStart(2, '0');
+          cinematicOverlay.classList.remove('hidden');
+          cinematicOverlay.innerHTML = `
+            <div class="banner-card">
+              <div class="banner-kicker">PREPARE TO MOVE</div>
+              <h2 class="banner-headline">ROUND ${rStr}</h2>
+              <div class="banner-stats-row">
+                <div class="banner-stat-box">
+                  <div class="hud-stat-label">Islands Remaining</div>
+                  <div class="hud-stat-val">${activeCount}</div>
+                </div>
+                <div class="banner-stat-box">
+                  <div class="hud-stat-label">Students Remaining</div>
+                  <div class="hud-stat-val" style="color:var(--gold);">${state.remainingStudents}</div>
+                </div>
+              </div>
+              <div class="banner-actions">
+                ${IS_POPOUT_PROJECTOR ? '' : '<button type="button" class="btn-primary-hero" style="max-width:300px;" id="ov-next-btn">START ROUND COUNTDOWN</button>'}
+              </div>
+            </div>
+          `;
+          const btn = document.getElementById('ov-next-btn');
+          if (btn) btn.onclick = () => enterPhase('COUNTDOWN');
+        } else if (state.phase === 'WINNER') {
+          cinematicOverlay.classList.remove('hidden');
+          const safeName = state.winnerName.replace(/[<>&"]/g, '');
+          cinematicOverlay.innerHTML = `
+            <div class="banner-card">
+              <div class="banner-kicker">🏆 VICTORY 🏆</div>
+              <h2 class="banner-headline">CHAMPION!</h2>
+              <p class="banner-sub">YOU SURVIVED THE DESTROYING ISLAND!</p>
+              ${safeName ? `<div style="margin-top:14px;font-family:var(--font-display);font-size:2rem;color:var(--gold-bright);">${safeName}</div>` : ''}
+              ${IS_POPOUT_PROJECTOR ? '' : `
+                <div class="winner-input-wrap">
+                  <input type="text" id="winner-name-input" class="winner-name-input" placeholder="Enter Winner's Name..." value="${safeName}" />
+                </div>
+                <div class="banner-actions">
+                  <button type="button" class="btn-primary-hero" style="max-width:220px;" id="ov-play-again">PLAY AGAIN</button>
+                  <button type="button" class="btn-secondary" style="padding:14px 24px;font-size:1rem;" id="ov-exit-setup">EXIT TO SETUP</button>
+                </div>
+              `}
+            </div>
+          `;
+          const nameInp = document.getElementById('winner-name-input');
+          if (nameInp) {
+            nameInp.addEventListener('input', e => {
+              state.winnerName = e.target.value;
+              broadcastState();
+            });
+          }
+          const paBtn = document.getElementById('ov-play-again');
+          if (paBtn) paBtn.onclick = () => startGame();
+          const exBtn = document.getElementById('ov-exit-setup');
+          if (exBtn) exBtn.onclick = () => enterPhase('SETUP');
+        } else {
+          cinematicOverlay.classList.add('hidden');
+        }
+
+        // Update Teacher Control Drawer buttons & manual island grid
+        updateTeacherDrawerUI();
+      }
+
+      function updateTeacherDrawerUI() {
+        const primaryBtn = document.getElementById('tc-btn-primary');
+        const pauseBtn = document.getElementById('tc-btn-pause');
+        const skipBtn = document.getElementById('tc-btn-skip');
+        const restartBtn = document.getElementById('tc-btn-restart-round');
+
+        if (state.phase === 'INTRO') {
+          primaryBtn.textContent = '▶ Begin Round 01';
+          primaryBtn.disabled = false;
+        } else if (state.phase === 'NEXT_ROUND') {
+          primaryBtn.textContent = `▶ Start Round ${String(state.round).padStart(2, '0')}`;
+          primaryBtn.disabled = false;
+        } else {
+          primaryBtn.textContent = '▶ Running...';
+          primaryBtn.disabled = true;
+        }
+
+        const inCountdown = state.phase === 'COUNTDOWN';
+        pauseBtn.disabled = !inCountdown;
+        pauseBtn.textContent = state.paused ? '▶ Resume' : '⏸ Pause';
+        skipBtn.disabled = !inCountdown;
+        restartBtn.disabled = !(inCountdown || state.phase === 'SELECTING');
+
+        // Island override grid
+        const grid = document.getElementById('tc-island-grid');
+        grid.innerHTML = '';
+        state.islands.forEach(isl => {
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'isl-pick-btn' + (isl.active ? '' : ' destroyed');
+          b.textContent = String(isl.id).padStart(2, '0');
+          b.disabled = !isl.active || !['COUNTDOWN', 'INTRO', 'NEXT_ROUND'].includes(state.phase);
+          b.title = isl.active ? `Manually destroy Island ${isl.id}` : 'Already destroyed';
+          b.onclick = () => manualSelectIsland(isl.id);
+          grid.appendChild(b);
+        });
+      }
+
+      function syncLiveAudioButtons() {
+        const m = document.getElementById('tc-audio-music');
+        const s = document.getElementById('tc-audio-sfx');
+        const v = document.getElementById('tc-audio-voice');
+        m.classList.toggle('active', state.settings.music);
+        m.textContent = `🎵 Music: ${state.settings.music ? 'ON' : 'OFF'}`;
+        s.classList.toggle('active', state.settings.sfx);
+        s.textContent = `💥 SFX: ${state.settings.sfx ? 'ON' : 'OFF'}`;
+        v.classList.toggle('active', state.settings.voice);
+        v.textContent = `📢 Voice: ${state.settings.voice ? 'ON' : 'OFF'}`;
+      }
+
+      /* ==================== TEACHER CONTROL EVENT HANDLERS ==================== */
+      document.getElementById('btn-start-game').addEventListener('click', () => {
+        document.getElementById('setup-reopen-bar').classList.add('hidden');
+        startGame();
+      });
+
+      document.getElementById('btn-close-setup').addEventListener('click', () => {
+        setupScreen.classList.add('hidden');
+        document.getElementById('setup-reopen-bar').classList.remove('hidden');
+      });
+
+      document.getElementById('btn-reopen-setup').addEventListener('click', () => {
+        document.getElementById('setup-reopen-bar').classList.add('hidden');
+        setupScreen.classList.remove('hidden');
+      });
+
+      document.getElementById('btn-close-elim').addEventListener('click', () => {
+        elimModal.classList.add('hidden');
+        teacherDrawer.classList.remove('collapsed');
+      });
+
+      document.getElementById('btn-toggle-drawer').addEventListener('click', () => {
+        teacherDrawer.classList.toggle('collapsed');
+      });
+      document.getElementById('btn-close-drawer').addEventListener('click', () => {
+        teacherDrawer.classList.add('collapsed');
+      });
+
+      document.getElementById('tc-btn-primary').addEventListener('click', () => {
+        if (state.phase === 'INTRO' || state.phase === 'NEXT_ROUND') {
+          enterPhase('COUNTDOWN');
+        }
+      });
+
+      document.getElementById('tc-btn-pause').addEventListener('click', () => {
+        if (state.phase !== 'COUNTDOWN') return;
+        state.paused = !state.paused;
+        updateHUDAndOverlays();
+        broadcastState();
+      });
+
+      document.getElementById('tc-btn-skip').addEventListener('click', () => {
+        if (state.phase !== 'COUNTDOWN') return;
+        state.timeLeft = 0;
+        enterPhase('SELECTING');
+      });
+
+      document.getElementById('tc-btn-restart-round').addEventListener('click', () => {
+        if (state.phase === 'COUNTDOWN' || state.phase === 'SELECTING') {
+          enterPhase('COUNTDOWN');
+        }
+      });
+
+      document.getElementById('tc-btn-end-game').addEventListener('click', () => {
+        enterPhase('SETUP');
+      });
+
+      document.getElementById('tc-audio-music').addEventListener('click', () => {
+        state.settings.music = !state.settings.music;
+        syncSetupUI();
+        syncLiveAudioButtons();
+      });
+      document.getElementById('tc-audio-sfx').addEventListener('click', () => {
+        state.settings.sfx = !state.settings.sfx;
+        syncSetupUI();
+        syncLiveAudioButtons();
+      });
+      document.getElementById('tc-audio-voice').addEventListener('click', () => {
+        state.settings.voice = !state.settings.voice;
+        syncSetupUI();
+        syncLiveAudioButtons();
+      });
+
+      function handleVolumeChange(val) {
+        state.settings.musicVolume = Math.max(0, Math.min(100, Number(val) || 0));
+        syncSetupUI();
+      }
+
+      document.getElementById('cfg-volume-range').addEventListener('input', e => handleVolumeChange(e.target.value));
+      document.getElementById('tc-volume-range').addEventListener('input', e => handleVolumeChange(e.target.value));
+
+      function openPopoutProjector() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('mode', 'projector');
+        window.open(url.toString(), 'DestroyingIslandProjector', 'width=1280,height=720');
+        setTimeout(broadcastState, 600);
+      }
+
+      document.getElementById('btn-open-popout-setup').addEventListener('click', openPopoutProjector);
+      document.getElementById('btn-popout-projector').addEventListener('click', openPopoutProjector);
+
+      document.getElementById('btn-fullscreen').addEventListener('click', () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen?.().catch(() => {});
+        } else {
+          document.exitFullscreen?.().catch(() => {});
+        }
+      });
+
+      window.addEventListener('keydown', e => {
+        if (e.target.tagName === 'INPUT') return;
+        if (e.code === 'KeyF') {
+          document.getElementById('btn-fullscreen').click();
+        } else if (e.code === 'KeyC' && state.phase !== 'SETUP' && !IS_POPOUT_PROJECTOR) {
+          teacherDrawer.classList.toggle('collapsed');
+        } else if (e.code === 'Space' && !IS_POPOUT_PROJECTOR) {
+          if (state.phase === 'COUNTDOWN') {
+            e.preventDefault();
+            document.getElementById('tc-btn-pause').click();
+          } else if (state.phase === 'INTRO' || state.phase === 'NEXT_ROUND') {
+            e.preventDefault();
+            enterPhase('COUNTDOWN');
+          }
+        }
+      });
+
+      /* ==================== PARTICLE & DESTRUCTION VFX ==================== */
+      function getIslandScreenPos(isl, w, h) {
+        return {
+          x: isl.xNorm * w,
+          y: isl.yNorm * h
+        };
+      }
+
+      function triggerDestructionParticles(islandId) {
+        const isl = state.islands.find(i => i.id === islandId);
+        if (!isl) return;
+        const w = canvas.width;
+        const h = canvas.height;
+        const pos = getIslandScreenPos(isl, w, h);
+        const mult = state.settings.intensity === 'cinematic' ? 1.45 : 0.85;
+
+        state.screenShake = 22 * mult;
+        state.flashAlpha = 0.75;
+
+        // Fireballs & Smoke & Debris
+        const count = Math.floor(85 * mult);
+        for (let i = 0; i < count; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 70 + Math.random() * 340;
+          const isSmoke = i % 3 === 0;
+          const isDebris = i % 4 === 0;
+          state.particles.push({
+            x: pos.x + (Math.random() - 0.5) * 90,
+            y: pos.y + (Math.random() - 0.5) * 50,
+            vx: Math.cos(angle) * speed * 0.75,
+            vy: Math.sin(angle) * speed * 0.45 - (90 + Math.random() * 220),
+            gravity: isSmoke ? -25 : 420,
+            size: isSmoke ? (24 + Math.random() * 38) : (isDebris ? (6 + Math.random() * 10) : (10 + Math.random() * 22)),
+            life: 0,
+            maxLife: isSmoke ? (1.6 + Math.random() * 1.2) : (0.9 + Math.random() * 0.9),
+            kind: isDebris ? 'debris' : (isSmoke ? 'smoke' : 'fire')
+          });
+        }
+
+        // Expanding shockwave & splash rings
+        for (let r = 0; r < 4; r++) {
+          state.rings.push({
+            x: pos.x,
+            y: pos.y + 20,
+            radius: 20,
+            maxRadius: (210 + r * 75) * mult,
+            life: 0,
+            maxLife: 1.4 + r * 0.35,
+            color: r === 0 ? '255, 160, 60' : '200, 245, 255'
+          });
+        }
+      }
+
+      function launchWinnerFireworks() {
+        const w = canvas.width;
+        const h = canvas.height;
+        const colors = ['#fbbf24', '#22d3ee', '#f43f5e', '#34d399', '#a78bfa', '#ffffff'];
+
+        for (let i = 0; i < 120; i++) {
+          state.confetti.push({
+            x: Math.random() * w,
+            y: -20 - Math.random() * h * 0.5,
+            vx: (Math.random() - 0.5) * 120,
+            vy: 110 + Math.random() * 160,
+            size: 6 + Math.random() * 7,
+            rot: Math.random() * Math.PI * 2,
+            vRot: (Math.random() - 0.5) * 8,
+            color: colors[i % colors.length]
+          });
+        }
+
+        const burstLoop = () => {
+          if (state.phase !== 'WINNER') return;
+          const bx = w * (0.15 + Math.random() * 0.7);
+          const by = h * (0.15 + Math.random() * 0.45);
+          const col = colors[Math.floor(Math.random() * colors.length)];
+          audio.playFireworkPop();
+          for (let i = 0; i < 36; i++) {
+            const a = (i / 36) * Math.PI * 2;
+            const sp = 90 + Math.random() * 190;
+            state.particles.push({
+              x: bx,
+              y: by,
+              vx: Math.cos(a) * sp,
+              vy: Math.sin(a) * sp,
+              gravity: 160,
+              size: 4 + Math.random() * 4,
+              life: 0,
+              maxLife: 1.1 + Math.random() * 0.5,
+              kind: 'spark',
+              color: col
+            });
+          }
+          setTimeout(burstLoop, 750 + Math.random() * 550);
+        };
+        burstLoop();
+      }
+
+      /* ==================== MAIN RENDER & UPDATE LOOP ==================== */
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resizeCanvas);
+      resizeCanvas();
+
+      let lastTime = performance.now();
+
+      function tick(now) {
+        const dt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+
+        update(dt, now / 1000);
+        render(now / 1000);
+        requestAnimationFrame(tick);
+      }
+
+      function update(dt, t) {
+        // Countdown logic (authoritative on main window)
+        if (!IS_POPOUT_PROJECTOR && state.phase === 'COUNTDOWN' && !state.paused) {
+          state.timeLeft -= dt;
+          const whole = Math.max(0, Math.ceil(state.timeLeft));
+          if (whole !== state.lastWholeSec && whole > 0) {
+            state.lastWholeSec = whole;
+            if (whole <= 5) {
+              audio.playFinalFiveTick(whole);
+            } else {
+              audio.playTick();
+            }
+          }
+          if (state.timeLeft <= 0) {
+            state.timeLeft = 0;
+            enterPhase('SELECTING');
+          } else {
+            // Update timer DOM smoothly
+            timerNumber.textContent = whole;
+            const frac = Math.max(0, Math.min(1, state.timeLeft / state.settings.duration));
+            timerArc.style.strokeDashoffset = 326.73 * (1 - frac);
+            const isUrgent = whole <= 5;
+            timerRingWrap.classList.toggle('urgent', isUrgent);
+            timerArc.setAttribute('stroke', isUrgent ? '#ef4444' : '#22d3ee');
+            timerStatusPill.textContent = isUrgent ? 'FINAL SECONDS!' : 'CHOOSE YOUR ISLAND';
+            broadcastState();
+          }
+        }
+
+        // Destruction animation progress
+        if (state.phase === 'DESTROYING') {
+          state.phaseTimer += dt;
+          const isl = state.islands.find(i => i.id === state.selectedIslandId);
+          if (isl) {
+            isl.shakeAmp = state.phaseTimer < 1.8 ? 14 : 6;
+            if (state.phaseTimer > 1.2) {
+              isl.sinkProgress = Math.min(1, (state.phaseTimer - 1.2) / 2.0);
+            }
+          }
+        }
+
+        // Screen shake & flash decay
+        if (state.screenShake > 0) state.screenShake = Math.max(0, state.screenShake - dt * 16);
+        if (state.flashAlpha > 0) state.flashAlpha = Math.max(0, state.flashAlpha - dt * 1.8);
+
+        // Clouds
+        state.clouds.forEach(c => {
+          c.x += c.speed * dt;
+          if (c.x > 1.25) c.x = -0.3;
+        });
+
+        // Particles
+        for (let i = state.particles.length - 1; i >= 0; i--) {
+          const p = state.particles[i];
+          p.life += dt;
+          if (p.life >= p.maxLife) {
+            state.particles.splice(i, 1);
+            continue;
+          }
+          p.vy += p.gravity * dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+        }
+
+        // Rings
+        for (let i = state.rings.length - 1; i >= 0; i--) {
+          const r = state.rings[i];
+          r.life += dt;
+          if (r.life >= r.maxLife) {
+            state.rings.splice(i, 1);
+          }
+        }
+
+        // Confetti
+        if (state.phase === 'WINNER') {
+          state.confetti.forEach(c => {
+            c.y += c.vy * dt;
+            c.x += c.vx * dt + Math.sin(t * 3 + c.rot) * 28 * dt;
+            c.rot += c.vRot * dt;
+            if (c.y > canvas.height + 20) {
+              c.y = -20;
+              c.x = Math.random() * canvas.width;
+            }
+          });
+        }
+      }
+
+      function render(t) {
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.save();
+        if (state.screenShake > 0.2) {
+          ctx.translate((Math.random() - 0.5) * state.screenShake, (Math.random() - 0.5) * state.screenShake);
+        }
+
+        // 1. Ocean Background with subtle breathing wave motion
+        if (assets.ocean) {
+          const imgRatio = assets.ocean.width / assets.ocean.height;
+          const winRatio = w / h;
+          let dw, dh, dx, dy;
+          if (winRatio > imgRatio) {
+            dw = w * 1.04;
+            dh = dw / imgRatio;
+          } else {
+            dh = h * 1.04;
+            dw = dh * imgRatio;
+          }
+          dx = (w - dw) / 2 + Math.sin(t * 0.35) * 10;
+          dy = (h - dh) / 2 + Math.cos(t * 0.28) * 6;
+          ctx.drawImage(assets.ocean, dx, dy, dw, dh);
+        } else {
+          const grad = ctx.createLinearGradient(0, 0, 0, h);
+          grad.addColorStop(0, '#0c4a6e');
+          grad.addColorStop(1, '#082f49');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+        }
+
+        // 2. Animated Sunlit Caustics / Shimmer Overlay
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        for (let i = 0; i < 14; i++) {
+          const sx = ((i * 0.17 + t * 0.018) % 1.2 - 0.1) * w;
+          const sy = (0.32 + (i % 5) * 0.13) * h + Math.sin(t * 1.2 + i) * 10;
+          const sw = 90 + (i % 3) * 55;
+          const g = ctx.createRadialGradient(sx, sy, 2, sx, sy, sw);
+          g.addColorStop(0, 'rgba(125, 211, 252, 0.10)');
+          g.addColorStop(1, 'rgba(125, 211, 252, 0)');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.ellipse(sx, sy, sw, sw * 0.28, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+
+        // 3. Drifting Soft Cloud Shadows
+        state.clouds.forEach(c => {
+          const cx = c.x * w;
+          const cy = c.y * h;
+          const cw = c.w * w;
+          const cg = ctx.createRadialGradient(cx, cy, 10, cx, cy, cw);
+          cg.addColorStop(0, `rgba(255, 255, 255, ${c.alpha})`);
+          cg.addColorStop(1, 'rgba(255, 255, 255, 0)');
+          ctx.fillStyle = cg;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, cw, cw * 0.35, 0, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        // 4. Draw Islands (if not in SETUP)
+        if (state.phase !== 'SETUP') {
+          const isSingleRow = state.islands.length <= 4;
+          const baseSize = isSingleRow
+            ? Math.min(w * 0.28, h * 0.48, 430)
+            : Math.min(w * 0.24, h * 0.39, 360);
+          // Sort back-to-front by yNorm
+          const sorted = [...state.islands].sort((a, b) => a.yNorm - b.yNorm);
+
+          sorted.forEach(isl => {
+            const pos = getIslandScreenPos(isl, w, h);
+            const size = baseSize * isl.scale;
+            const bobY = Math.sin(t * 1.7 + isl.bobPhase) * 5;
+            const isTarget = (state.phase === 'SELECTING' && state.rouletteHighlightId === isl.id) ||
+                             ((state.phase === 'SELECTED_REVEAL' || state.phase === 'DESTROYING') && state.selectedIslandId === isl.id);
+
+            if (!isl.active && state.phase !== 'DESTROYING') {
+              // Subtle submerged reef ripple for destroyed islands
+              ctx.save();
+              ctx.strokeStyle = 'rgba(186, 230, 253, 0.22)';
+              ctx.lineWidth = 2;
+              const pulse = (t * 0.6 + isl.bobPhase) % 1;
+              ctx.beginPath();
+              ctx.ellipse(pos.x, pos.y + 18, size * (0.28 + pulse * 0.16), size * (0.10 + pulse * 0.06), 0, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.restore();
+              return;
+            }
+
+            // Sea-foam shoreline ring
+            const foamScale = 1 + Math.sin(t * 2.2 + isl.bobPhase) * 0.04;
+            ctx.save();
+            ctx.strokeStyle = isTarget ? 'rgba(248, 113, 113, 0.78)' : 'rgba(224, 242, 254, 0.42)';
+            ctx.lineWidth = isTarget ? 4.5 : 2.5;
+            ctx.beginPath();
+            ctx.ellipse(pos.x, pos.y + size * 0.22, size * 0.44 * foamScale, size * 0.16 * foamScale, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            // Island Sprite with Shake & Sink
+            ctx.save();
+            const shakeX = isl.shakeAmp ? (Math.random() - 0.5) * isl.shakeAmp : 0;
+            const shakeY = isl.shakeAmp ? (Math.random() - 0.5) * isl.shakeAmp * 0.7 : 0;
+            const sinkOffset = isl.sinkProgress * size * 0.62;
+            const alpha = Math.max(0, 1 - isl.sinkProgress * 0.95);
+            ctx.globalAlpha = alpha;
+
+            if (isTarget) {
+              ctx.shadowColor = 'rgba(239, 68, 68, 0.95)';
+              ctx.shadowBlur = 32;
+            } else {
+              ctx.shadowColor = 'rgba(0, 18, 38, 0.55)';
+              ctx.shadowBlur = 18;
+            }
+
+            const drawX = pos.x - size / 2 + shakeX;
+            const drawY = pos.y - size / 2 + bobY + shakeY + sinkOffset;
+
+            const sprite = assets.islands[isl.imgIndex];
+            if (sprite) {
+              ctx.drawImage(sprite, drawX, drawY, size, size);
+            }
+
+            // Glowing Cracks during destruction
+            if (state.phase === 'DESTROYING' && isl.id === state.selectedIslandId) {
+              ctx.strokeStyle = '#ff6b00';
+              ctx.lineWidth = 3.5;
+              ctx.shadowColor = '#ff2200';
+              ctx.shadowBlur = 14;
+              isl.cracks.forEach(pts => {
+                ctx.beginPath();
+                pts.forEach((pt, idx) => {
+                  const px = pos.x + pt.x * size * 0.42 + shakeX;
+                  const py = pos.y + pt.y * size * 0.35 + bobY + shakeY + sinkOffset;
+                  if (idx === 0) ctx.moveTo(px, py);
+                  else ctx.lineTo(px, py);
+                });
+                ctx.stroke();
+              });
+            }
+            ctx.restore();
+
+            // Target Reticle Ring
+            if (isTarget && isl.sinkProgress < 0.7) {
+              ctx.save();
+              ctx.strokeStyle = '#ef4444';
+              ctx.lineWidth = 4;
+              ctx.setLineDash([12, 8]);
+              ctx.beginPath();
+              ctx.ellipse(pos.x, pos.y + size * 0.22, size * 0.52, size * 0.20, 0, 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.restore();
+            }
+
+            // Large, High-Contrast Classroom Island Number Badge
+            if (isl.sinkProgress < 0.65) {
+              const badgeY = pos.y + size * 0.36 + bobY * 0.5;
+              const badgeScale = isTarget ? 1.12 : 1.0;
+              const bw = Math.max(96, size * 0.44) * badgeScale;
+              const bh = Math.max(52, size * 0.24) * badgeScale;
+              const bx = pos.x - bw / 2;
+              const by = badgeY - bh / 2;
+
+              ctx.save();
+
+              // Outer atmospheric glow
+              ctx.shadowColor = isTarget ? 'rgba(239, 68, 68, 0.9)' : 'rgba(14, 165, 233, 0.45)';
+              ctx.shadowBlur = isTarget ? 26 : 18;
+              ctx.shadowOffsetY = 5;
+
+              // Rich gradient fill
+              const bgGrad = ctx.createLinearGradient(0, by, 0, by + bh);
+              if (isTarget) {
+                bgGrad.addColorStop(0, '#ef4444');
+                bgGrad.addColorStop(1, '#7f1d1d');
+              } else {
+                bgGrad.addColorStop(0, '#0f2942');
+                bgGrad.addColorStop(1, '#051322');
+              }
+              ctx.fillStyle = bgGrad;
+              ctx.beginPath();
+              ctx.roundRect(bx, by, bw, bh, 16);
+              ctx.fill();
+
+              // Reset shadow for crisp strokes & text
+              ctx.shadowBlur = 0;
+              ctx.shadowOffsetY = 0;
+
+              // Outer metallic gold / danger border
+              const borderGrad = ctx.createLinearGradient(bx, by, bx + bw, by + bh);
+              if (isTarget) {
+                borderGrad.addColorStop(0, '#fecaca');
+                borderGrad.addColorStop(1, '#f87171');
+              } else {
+                borderGrad.addColorStop(0, '#fde68a');
+                borderGrad.addColorStop(0.5, '#fbbf24');
+                borderGrad.addColorStop(1, '#d97706');
+              }
+              ctx.strokeStyle = borderGrad;
+              ctx.lineWidth = 3.2;
+              ctx.stroke();
+
+              // Subtle inner highlight rim
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+              ctx.lineWidth = 1.2;
+              ctx.beginPath();
+              ctx.roundRect(bx + 3, by + 3, bw - 6, bh - 6, 13);
+              ctx.stroke();
+
+              // Small "ISLAND" header label
+              ctx.fillStyle = isTarget ? '#fecaca' : '#38bdf8';
+              ctx.font = `800 ${Math.max(9, Math.round(bh * 0.19))}px "Outfit", sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText('ISLAND', pos.x, by + bh * 0.26);
+
+              // Large bold island number
+              ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
+              ctx.shadowBlur = 6;
+              ctx.shadowOffsetY = 2;
+              ctx.fillStyle = isTarget ? '#ffffff' : '#fef3c7';
+              ctx.font = `800 ${Math.max(24, Math.round(bh * 0.56))}px "JetBrains Mono", monospace`;
+              ctx.fillText(String(isl.id).padStart(2, '0'), pos.x, by + bh * 0.67);
+
+              ctx.restore();
+            }
+          });
+        }
+
+        // 5. Shockwave & Splash Rings
+        state.rings.forEach(r => {
+          const p = r.life / r.maxLife;
+          const rad = r.radius + (r.maxRadius - r.radius) * p;
+          ctx.save();
+          ctx.strokeStyle = `rgba(${r.color}, ${1 - p})`;
+          ctx.lineWidth = 5 * (1 - p);
+          ctx.beginPath();
+          ctx.ellipse(r.x, r.y, rad, rad * 0.42, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        });
+
+        // 6. Explosion / Smoke / Debris / Firework Particles
+        state.particles.forEach(p => {
+          const frac = 1 - p.life / p.maxLife;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, frac);
+          if (p.kind === 'fire') {
+            ctx.fillStyle = frac > 0.5 ? '#fde047' : '#f97316';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * frac, 0, Math.PI * 2);
+            ctx.fill();
+          } else if (p.kind === 'smoke') {
+            ctx.fillStyle = '#334155';
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * (0.7 + (1 - frac) * 0.6), 0, Math.PI * 2);
+            ctx.fill();
+          } else if (p.kind === 'debris') {
+            ctx.fillStyle = '#57534e';
+            ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size * 0.75);
+          } else if (p.kind === 'spark') {
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * frac, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        });
+
+        // 7. Winner Confetti
+        if (state.phase === 'WINNER') {
+          state.confetti.forEach(c => {
+            ctx.save();
+            ctx.translate(c.x, c.y);
+            ctx.rotate(c.rot);
+            ctx.fillStyle = c.color;
+            ctx.fillRect(-c.size / 2, -c.size / 4, c.size, c.size * 0.5);
+            ctx.restore();
+          });
+        }
+
+        // 8. Impact Flash
+        if (state.flashAlpha > 0) {
+          ctx.fillStyle = `rgba(255, 235, 190, ${state.flashAlpha * 0.55})`;
+          ctx.fillRect(0, 0, w, h);
+        }
+
+        ctx.restore();
+      }
+
+      /* ==================== BOOTSTRAP ==================== */
+      loadAssets();
+      syncSetupUI();
+      syncLiveAudioButtons();
+      requestAnimationFrame(tick);
+    })();
+  </script>
+</body>
+</html>
